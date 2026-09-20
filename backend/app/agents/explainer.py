@@ -140,7 +140,10 @@ class RecommendationExplainerAgent:
             return tmpl
 
         try:
+            import time
             import google.generativeai as genai
+            from app.services.llm_logger import log_llm_call
+            t0 = time.time()
             genai.configure(api_key=self.api_key)
             model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -159,6 +162,8 @@ class RecommendationExplainerAgent:
 
             response = await model.generate_content_async(prompt)
             explanation_text = response.text.strip()
+            lat = int((time.time() - t0) * 1000)
+            await log_llm_call(purpose="recommendation_explainer", model="gemini-1.5-flash", latency_ms=lat, success=True)
 
             # Execute Guardrail Fact Inspection
             if not verify_explanation_facts(explanation_text, match_result):
@@ -173,6 +178,8 @@ class RecommendationExplainerAgent:
 
         except Exception as e:
             logger.error(f"Explainer LLM error: {str(e)}. Using fallback template.")
+            from app.services.llm_logger import log_llm_call
+            await log_llm_call(purpose="recommendation_explainer", model="gemini-1.5-flash", success=False)
             tmpl = generate_template_explanation(match_result)
             _EXPLANATION_CACHE[cache_key] = tmpl
             return tmpl

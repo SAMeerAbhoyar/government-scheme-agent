@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     # Maintenance & Notifications
     MAX_CONSECUTIVE_FETCH_FAILURES: int = 3
     SEND_EMAIL_NOTIFICATIONS: bool = False
+    PROFILE_ENCRYPTION_KEY: str = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H"
 
     model_config = SettingsConfigDict(
         env_file=".env",

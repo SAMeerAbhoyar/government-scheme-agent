@@ -1,5 +1,6 @@
 import logging
 import json
+import time
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
@@ -40,6 +41,8 @@ class QueryPlannerAgent:
 
         try:
             import google.generativeai as genai
+            from app.services.llm_logger import log_llm_call
+            t0 = time.time()
             genai.configure(api_key=self.api_key)
             model = genai.GenerativeModel("gemini-1.5-flash")
 
@@ -48,10 +51,14 @@ class QueryPlannerAgent:
                 full_prompt,
                 generation_config={"response_mime_type": "application/json"}
             )
+            lat = int((time.time() - t0) * 1000)
+            await log_llm_call(purpose="query_planning", model="gemini-1.5-flash", latency_ms=lat, success=True)
             data = json.loads(response.text)
             return QueryPlanOutput(**data)
         except Exception as e:
             logger.warning(f"Query planner LLM failed: {str(e)}, using fallback planner")
+            from app.services.llm_logger import log_llm_call
+            await log_llm_call(purpose="query_planning", model="gemini-1.5-flash", success=False)
             return self._fallback_plan(user_prompt, user_profile)
 
     def _fallback_plan(self, user_prompt: str, user_profile: Dict[str, Any]) -> QueryPlanOutput:

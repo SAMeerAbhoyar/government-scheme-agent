@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 from app.core.config import settings
+from app.core.middleware import HardeningMiddleware
 from app.api import auth, profile, health, schemes, admin, discovery, user_features, notifications
 
 app = FastAPI(
@@ -12,6 +13,9 @@ app = FastAPI(
     version="1.0.0",
     debug=settings.DEBUG
 )
+
+# Hardening Middleware (Security Headers, Rate Limiting, JSON Logging)
+app.add_middleware(HardeningMiddleware)
 
 # CORS Configuration
 app.add_middleware(
