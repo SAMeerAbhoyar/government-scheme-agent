@@ -40,35 +40,52 @@ async def test_security_headers(client):
 @pytest.mark.asyncio
 async def test_crypto_round_trip_encryption():
     raw_val = "OBC"
-    key_correct = "my-secret-key-1234567890123456"
+    key_correct = "my-secret-key-1234567890123456789032chars"
     encrypted = encrypt_value(raw_val, key=key_correct)
     assert encrypted != raw_val
-    assert str(encrypted).startswith("gAAAAA")
+    assert str(encrypted).startswith("gAAAA")
 
     decrypted = decrypt_value(encrypted, key=key_correct)
     assert decrypted == raw_val
 
 @pytest.mark.asyncio
-async def test_crypto_wrong_key_fails():
+async def test_crypto_wrong_key_raises():
     raw_val = "120000.0"
-    key_correct = "correct-key-12345678901234567890"
-    key_wrong = "wrong-key-9999999999999999999999"
+    key_correct = "correct-key-1234567890123456789032chars"
+    key_wrong = "wrong-key-999999999999999999999932chars"
 
     encrypted = encrypt_value(raw_val, key=key_correct)
-    f_wrong = Fernet(get_fernet_key(key_wrong))
+    assert encrypted.startswith("gAAAA")
 
-    # Decrypting with wrong key raises InvalidToken
-    with pytest.raises(InvalidToken):
-        f_wrong.decrypt(encrypted.encode('utf-8'))
+    with pytest.raises(ValueError, match="Failed to decrypt value"):
+        decrypt_value(encrypted, key=key_wrong)
 
 @pytest.mark.asyncio
-async def test_app_refuses_to_start_outside_dev_with_missing_key():
-    # Outside development (e.g. production), missing or placeholder ENCRYPTION_KEY must raise ValueError
+async def test_crypto_plaintext_legacy_passes_through():
+    legacy_val = "OBC"
+    key = "some-encryption-key-min-32-characters"
+    result = decrypt_value(legacy_val, key=key)
+    assert result == "OBC"
+
+@pytest.mark.asyncio
+async def test_missing_or_short_key_fails_startup():
+    valid_key = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H" # 32 chars
+    short_key = "short"
+
+    # Missing or short ENCRYPTION_KEY fails startup
     with pytest.raises(ValueError, match="ENCRYPTION_KEY is required"):
-        Settings(ENVIRONMENT="production", ENCRYPTION_KEY="placeholder")
+        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=valid_key, ENCRYPTION_KEY="")
 
     with pytest.raises(ValueError, match="ENCRYPTION_KEY is required"):
-        Settings(ENVIRONMENT="production", ENCRYPTION_KEY="")
+        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=valid_key, ENCRYPTION_KEY=short_key)
+
+    # Missing or short JWT_SECRET_KEY fails startup
+    with pytest.raises(ValueError, match="JWT_SECRET_KEY is required"):
+        Settings(ENVIRONMENT="production", JWT_SECRET_KEY="", ENCRYPTION_KEY=valid_key)
+
+    with pytest.raises(ValueError, match="JWT_SECRET_KEY is required"):
+        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=short_key, ENCRYPTION_KEY=valid_key)
+
 
 @pytest.mark.asyncio
 async def test_encrypted_profile_matching_passes(db_session, auth_user):

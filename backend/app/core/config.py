@@ -18,13 +18,12 @@ class Settings(BaseSettings):
     DATABASE_URL_SYNC: str = "postgresql+psycopg://scheme_user:scheme_password@localhost:5432/scheme_db"
 
     # JWT Security
-    JWT_SECRET_KEY: str = "super-secret-jwt-key-change-this-in-production-min-32-chars"
+    JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
 
-    # Profile Encryption Key
-    ENCRYPTION_KEY: str = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H"
-    PROFILE_ENCRYPTION_KEY: str = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H"
+    # Column Encryption Key
+    ENCRYPTION_KEY: str = ""
 
     # CORS
     CORS_ORIGINS: List[str] = [
@@ -53,14 +52,12 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
 
     @model_validator(mode="after")
-    def validate_encryption_key_for_environment(self):
-        if self.ENVIRONMENT.lower() not in ("development", "testing"):
-            invalid_placeholders = {"", "placeholder", "your-encryption-key-placeholder", "change-me", "none"}
-            key = (self.ENCRYPTION_KEY or "").strip().lower()
-            if not key or key in invalid_placeholders:
-                raise ValueError(
-                    f"ENCRYPTION_KEY is required and cannot be empty or placeholder when running in '{self.ENVIRONMENT}' environment."
-                )
+    def validate_secrets_and_encryption_key(self):
+        if self.ENVIRONMENT.lower() != "testing":
+            if not self.JWT_SECRET_KEY or len(self.JWT_SECRET_KEY.strip()) < 32:
+                raise ValueError("JWT_SECRET_KEY is required and must be at least 32 characters long.")
+            if not self.ENCRYPTION_KEY or len(self.ENCRYPTION_KEY.strip()) < 32:
+                raise ValueError("ENCRYPTION_KEY is required and must be at least 32 characters long.")
         return self
 
     model_config = SettingsConfigDict(

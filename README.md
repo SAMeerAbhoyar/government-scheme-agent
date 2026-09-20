@@ -123,7 +123,7 @@ python scripts/smoke_test.py
 ## Known Limitations & Production Guidance
 - **Domain Scope**: Configured for Central & Maharashtra official portal domains (`.gov.in`, `.nic.in`, `mahadbt.maharashtra.gov.in`).
 - **Offline Seeding**: Seeding mode (`seed_demo.py`) works fully offline without requiring active Gemini API keys or live web scraping.
-- **Security**: In production, set custom `JWT_SECRET_KEY` and `PROFILE_ENCRYPTION_KEY` in environment variables.
+- **Security**: In production, set custom `JWT_SECRET_KEY` and `ENCRYPTION_KEY` in environment variables.
 
 ---
 

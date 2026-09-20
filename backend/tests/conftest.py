@@ -8,6 +8,7 @@ os.environ["ENVIRONMENT"] = "testing"
 os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ["DATABASE_URL_SYNC"] = "sqlite:///:memory:"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-pytest-execution-only-32chars"
+os.environ["ENCRYPTION_KEY"] = "test-encryption-key-for-pytest-execution-32chars"
 
 from app.core.config import settings
 from app.core.db import Base, get_db

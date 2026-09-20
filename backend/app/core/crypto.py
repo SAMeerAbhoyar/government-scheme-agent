@@ -1,12 +1,15 @@
 import base64
 import hashlib
+import logging
 from typing import Optional, Any
 from cryptography.fernet import Fernet, InvalidToken
 from sqlalchemy.types import TypeDecorator, Text
 from app.core.config import settings
 
+logger = logging.getLogger(__name__)
+
 def get_fernet_key(key: Optional[str] = None) -> bytes:
-    raw_key = key if key is not None else getattr(settings, "ENCRYPTION_KEY", getattr(settings, "PROFILE_ENCRYPTION_KEY", None))
+    raw_key = key if key is not None else getattr(settings, "ENCRYPTION_KEY", None)
     if not raw_key:
         raise ValueError("ENCRYPTION_KEY is required for encryption")
     digest = hashlib.sha256(raw_key.encode('utf-8')).digest()
@@ -22,12 +25,17 @@ def encrypt_value(val: Any, key: Optional[str] = None) -> Optional[str]:
 def decrypt_value(val: Optional[str], key: Optional[str] = None) -> Optional[str]:
     if val is None or val == "":
         return val
+    val_str = str(val)
+    if not val_str.startswith("gAAAA"):
+        # Plaintext legacy value fallback
+        return val_str
+
     f = Fernet(get_fernet_key(key))
     try:
-        return f.decrypt(val.encode('utf-8')).decode('utf-8')
-    except (InvalidToken, Exception):
-        # Fallback if raw unencrypted string stored before migration
-        return val
+        return f.decrypt(val_str.encode('utf-8')).decode('utf-8')
+    except Exception as e:
+        logger.error("Failed to decrypt Fernet token: invalid key or corrupted payload")
+        raise ValueError("Failed to decrypt value: invalid key or corrupted Fernet token") from e
 
 class EncryptedString(TypeDecorator):
     """

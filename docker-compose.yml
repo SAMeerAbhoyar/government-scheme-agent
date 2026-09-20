@@ -32,6 +32,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://scheme_user:scheme_password@db:5432/scheme_db
       DATABASE_URL_SYNC: postgresql+psycopg://scheme_user:scheme_password@db:5432/scheme_db
       JWT_SECRET_KEY: super-secret-jwt-key-change-this-in-production-min-32-chars
+      ENCRYPTION_KEY: a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H
       ENVIRONMENT: production
     ports:
       - "8000:8000"
