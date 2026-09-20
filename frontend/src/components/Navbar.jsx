@@ -88,6 +88,8 @@ const Navbar = () => {
                     {unreadCount}
                   </span>
                 )}
+              </Link>
+
               {user?.role === 'admin' && (
                 <Link
                   to="/admin"

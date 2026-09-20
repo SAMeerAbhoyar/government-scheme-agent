@@ -1,23 +1,53 @@
 version: '3.8'
 
 services:
-  postgres:
+  db:
     image: pgvector/pgvector:pg16
-    container_name: scheme_agent_postgres
-    restart: always
+    container_name: scheme_db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-scheme_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scheme_password}
-      POSTGRES_DB: ${POSTGRES_DB:-scheme_db}
+      POSTGRES_USER: scheme_user
+      POSTGRES_PASSWORD: scheme_password
+      POSTGRES_DB: scheme_db
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scheme_user} -d ${POSTGRES_DB:-scheme_db}"]
+      test: ["CMD-SHELL", "pg_isready -U scheme_user -d scheme_db"]
       interval: 5s
       timeout: 5s
       retries: 5
 
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: scheme_backend
+    environment:
+      POSTGRES_USER: scheme_user
+      POSTGRES_PASSWORD: scheme_password
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: scheme_db
+      DATABASE_URL: postgresql+asyncpg://scheme_user:scheme_password@db:5432/scheme_db
+      DATABASE_URL_SYNC: postgresql+psycopg://scheme_user:scheme_password@db:5432/scheme_db
+      JWT_SECRET_KEY: super-secret-jwt-key-change-this-in-production-min-32-chars
+      ENVIRONMENT: production
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: scheme_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
 volumes:
-  pgdata:
+  postgres_data:

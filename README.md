@@ -1,102 +1,131 @@
 # Automated Government Scheme Recommendation Agent
 
-An AI-ready platform for ingesting, structuring, matching, and recommending government schemes (Central + Maharashtra) for citizens based on deterministic eligibility rules and source citations.
+An AI-ready full-stack platform for ingesting, structuring, matching, and recommending government schemes (Central + Maharashtra) for citizens based on deterministic eligibility rules, source citations, and LLM explanations.
+
+---
+
+## Architecture Overview
+
+```
+                          ┌───────────────────────────┐
+                          │   Citizen / Admin UI      │
+                          │   (React + Vite + Tailwind│
+                          └─────────────┬─────────────┘
+                                        │ REST API (JWT Auth)
+                          ┌─────────────▼─────────────┐
+                          │     FastAPI Backend       │
+                          └──────┬─────────────┬──────┘
+                                 │             │
+              ┌──────────────────┴──┐       ┌──┴──────────────────┐
+              │  Matching Engine    │       │ Hybrid RRF Retriever│
+              │  (Deterministic)    │       │ (pgvector + tsv)    │
+              └──────────┬──────────┘       └──┬──────────────────┘
+                         │                     │
+              ┌──────────▼─────────────────────▼──────────┐
+              │      PostgreSQL 16 + pgvector Database    │
+              └───────────────────────────────────────────┘
+```
+
+---
 
 ## Tech Stack
-- **Backend**: FastAPI (Python 3.11+), SQLAlchemy 2.0, Alembic, Pydantic v2, PyJWT, bcrypt
+- **Backend**: FastAPI (Python 3.11+), SQLAlchemy 2.0, Alembic, Pydantic v2, PyJWT, bcrypt, Fernet AES Encryption
 - **Ingestion & Extraction**: Httpx, Trafilatura, BeautifulSoup4, Pdfplumber, Google GenAI (Gemini)
 - **RAG & Hybrid Search**: PostgreSQL 16 + `pgvector` (Cosine Similarity) + `tsvector` (Full-Text Search) + Reciprocal Rank Fusion (RRF)
-- **Frontend**: React, Vite, Tailwind CSS, React Router v6, Axios
-- **Testing**: Pytest, Pytest-asyncio
+- **Frontend**: React, Vite, Tailwind CSS, React Router v6, Axios, Lucide Icons
+- **Deployment**: Docker & Docker Compose
+- **Testing & CI**: Pytest (51 passing unit tests), GitHub Actions CI
 
 ---
 
-## Quick Setup & Execution Guide
+## Quick Setup & Demo (Under 5 Minutes)
 
-### 1. Prerequisites
-- Docker & Docker Compose
-- Python 3.11+
-- Node.js 18+
-
-### 2. Environment Setup
+### Option 1: Docker Compose (Full Stack Single Command)
 ```bash
-cd government-scheme-agent
-cp .env.example .env
+docker-compose up --build -d
 ```
-
-### 3. Start PostgreSQL Database
-```bash
-docker-compose up -d
-```
-
-### 4. Backend Setup & Migrations
+Then seed the offline demo database:
 ```bash
 cd backend
+python -m app.seed_demo
+```
+- **Frontend URL**: `http://localhost:80`
+- **Backend API Docs**: `http://localhost:8000/docs`
 
-# Create virtual environment
+---
+
+### Option 2: Local Development Setup
+
+#### 1. Backend Setup
+```bash
+cd backend
 python -m venv venv
 
-# Windows PowerShell
+# Activate Virtual Environment (Windows)
 .\venv\Scripts\Activate.ps1
-# Linux/macOS
-source venv/bin/activate
+# Linux/macOS: source venv/bin/activate
 
-# Install Phase 1 + Phase 2 dependencies
 pip install -r requirements.txt
-
-# Run database migrations
-alembic upgrade head
-
-# Run backend server
+python -m app.seed_demo
 uvicorn app.main:app --reload --port 8000
 ```
-Backend API interactive docs: [http://localhost:8000/docs](http://localhost:8000/docs).
+
+#### 2. Frontend Setup
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 
-## Phase 2 Commands (Offline Ingestion & Hybrid Search)
+## Step-by-Step Live Demo Script
 
-### 1. Run Offline Ingestion CLI
-Ingest 20 official Central & Maharashtra government schemes from allowlisted domain sources (`sources.yaml`):
+1. **Sign In as Demo Admin**:
+   - **Email**: `admin@demo.gov.in`
+   - **Password**: `Admin@123`
+   - Navigate to `/admin` to view the **Admin Command Center**, system metrics, unverified queue, source health, and changes feed.
+
+2. **Sign In as Demo Persona 1 (Rahul Sharma - Student)**:
+   - **Email**: `rahul.student@demo.gov.in`
+   - **Password**: `User@123`
+   - **Mode 1 Search**: Type query *"scholarship for engineering student in maharashtra"*. View matched schemes, structured match results, and explanations.
+   - **Save Scheme**: Click "Save Scheme" to bookmark a scheme.
+
+3. **Sign In as Demo Persona 2 (Ramesh Patil - Farmer)**:
+   - **Email**: `ramesh.farmer@demo.gov.in`
+   - **Password**: `User@123`
+   - **Mode 2 Matching**: Click "Discover by Profile" to run automated profile matching against all active Central & Maharashtra schemes.
+
+4. **Notifications & Change Detection**:
+   - Check `/notifications` to see alerts for approaching deadlines, new scheme matches, and scheme version diffs.
+
+---
+
+## Verification & Testing Commands
+
+### 1. Run Complete Pytest Suite (51 Tests)
 ```bash
 cd backend
-python -m app.ingestion.run --limit 20
-```
-*Optional CLI Flags*:
-- `--source <id>`: Ingest a single source by ID (e.g. `src-04-mahadbt-rajarshi-shahu`).
-- `--limit N`: Limit ingestion to $N$ sources.
-- `--reindex`: Clear existing vector embeddings and re-chunk document sections.
-
-### 2. Run Test Hybrid Search Query
-Search pre-ingested schemes using hybrid RRF retrieval:
-```bash
-python -m app.ingestion.test_search
+python -m pytest
 ```
 
-### 3. API Hybrid Search Endpoint
-`GET /schemes/search?q=scholarship+for+engineering+students+Maharashtra&state=Maharashtra` (Requires Bearer JWT token):
+### 2. Run API Smoke Test Script
 ```bash
-curl -H "Authorization: Bearer <your_jwt_token>" \
-  "http://localhost:8000/schemes/search?q=scholarship+engineering+Maharashtra&state=Maharashtra"
-```
-
-### 4. Admin Management Endpoints
-- List unverified schemes: `GET /admin/schemes?status=unverified`
-- View scheme details & version history: `GET /admin/schemes/{id}`
-- Verify scheme status to `active`: `POST /admin/schemes/{id}/verify`
-- Mark scheme status as `expired`: `POST /admin/schemes/{id}/mark-outdated`
-
----
-
-## Run Full Pytest Suite (25 Tests)
-Run unit & integration tests covering Auth, Profile, Tri-State Eligibility Engine, Crawler, Extractor, Grounding Check, Prompt-Injection Defense, Versioning, Admin API, and Hybrid RRF Retriever:
-```bash
-cd backend
-pytest
+python scripts/smoke_test.py
 ```
 
 ---
 
-## Deliverables Status
-- [x] **Phase 1**: FastAPI core, PostgreSQL 16 + pgvector, JWT Auth, Profile CRUD, Tri-state Deterministic Eligibility Evaluator, React Frontend.
-- [x] **Phase 2**: Sources allowlisting (`sources.yaml`), HTML/PDF Crawler, Structured LLM Extractor, Grounding Check, Prompt-Injection Defense, Scheme Versioning, Hybrid RRF Search, Ingestion CLI (`run.py`), Admin Verification API, Pytest Suite (25/25 passing).
+## Known Limitations & Production Guidance
+- **Domain Scope**: Configured for Central & Maharashtra official portal domains (`.gov.in`, `.nic.in`, `mahadbt.maharashtra.gov.in`).
+- **Offline Seeding**: Seeding mode (`seed_demo.py`) works fully offline without requiring active Gemini API keys or live web scraping.
+- **Security**: In production, set custom `JWT_SECRET_KEY` and `PROFILE_ENCRYPTION_KEY` in environment variables.
+
+---
+
+## Completion Status
+- [x] **Phase 1**: FastAPI backend, PostgreSQL 16 + pgvector, Auth, Profile CRUD, Tri-State Eligibility Engine, React Frontend.
+- [x] **Phase 2**: Sources Allowlist, Crawler, LLM Extractor, Grounding Verification, Versioning, Hybrid Search RRF.
+- [x] **Phase 3**: Matching Engine (Mode 1 & Mode 2), Recommendation Explainer Agent with Guardrail Fact Inspector, Saved/History/Compare/Feedback.
+- [x] **Phase 4**: Change Detection & Version Diffs, Notifications & Deduplication, Admin Dashboard, Hardening (Security Headers, Rate Limiting, Fernet AES Encryption, PII Redaction, No-500 Fallbacks), Docker & Demo Readiness.
