@@ -1,5 +1,5 @@
 import os
-from typing import List, Union
+from typing import List, Union, Any
 from pydantic import AnyHttpUrl, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,13 +9,8 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Database
-    POSTGRES_USER: str = "scheme_user"
-    POSTGRES_PASSWORD: str = "scheme_password"
-    POSTGRES_HOST: str = "localhost"
-    POSTGRES_PORT: int = 5432
-    POSTGRES_DB: str = "scheme_db"
-    DATABASE_URL: str = "postgresql+asyncpg://scheme_user:scheme_password@localhost:5432/scheme_db"
-    DATABASE_URL_SYNC: str = "postgresql+psycopg://scheme_user:scheme_password@localhost:5432/scheme_db"
+    DATABASE_URL: str = "sqlite+aiosqlite:///./scheme_agent.db"
+    DATABASE_URL_SYNC: str = "sqlite:///./scheme_agent.db"
 
     # JWT Security
     JWT_SECRET_KEY: str = ""
@@ -26,7 +21,7 @@ class Settings(BaseSettings):
     ENCRYPTION_KEY: str = ""
 
     # CORS
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: Union[str, List[str]] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
@@ -51,6 +46,20 @@ class Settings(BaseSettings):
     ENABLE_INGESTION_SCHEDULER: bool = False
     RATE_LIMIT_PER_MINUTE: int = 60
 
+    @model_validator(mode="before")
+    @classmethod
+    def fallback_profile_encryption_key(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            db_url = str(data.get("DATABASE_URL") or "")
+            if "postgresql" in db_url:
+                data["DATABASE_URL"] = "sqlite+aiosqlite:///./scheme_agent.db"
+            db_sync_url = str(data.get("DATABASE_URL_SYNC") or "")
+            if "postgresql" in db_sync_url:
+                data["DATABASE_URL_SYNC"] = "sqlite:///./scheme_agent.db"
+            if not data.get("ENCRYPTION_KEY") and data.get("PROFILE_ENCRYPTION_KEY"):
+                data["ENCRYPTION_KEY"] = data["PROFILE_ENCRYPTION_KEY"]
+        return data
+
     @model_validator(mode="after")
     def validate_secrets_and_encryption_key(self):
         if self.ENVIRONMENT.lower() != "testing":
@@ -61,7 +70,7 @@ class Settings(BaseSettings):
         return self
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "../.env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore"

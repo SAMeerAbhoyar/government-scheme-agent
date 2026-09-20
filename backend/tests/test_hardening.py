@@ -68,23 +68,28 @@ async def test_crypto_plaintext_legacy_passes_through():
     assert result == "OBC"
 
 @pytest.mark.asyncio
-async def test_missing_or_short_key_fails_startup():
+async def test_missing_or_short_key_fails_startup(monkeypatch):
+    monkeypatch.delenv("ENCRYPTION_KEY", raising=False)
+    monkeypatch.delenv("PROFILE_ENCRYPTION_KEY", raising=False)
+    monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+
     valid_key = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H" # 32 chars
     short_key = "short"
 
     # Missing or short ENCRYPTION_KEY fails startup
     with pytest.raises(ValueError, match="ENCRYPTION_KEY is required"):
-        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=valid_key, ENCRYPTION_KEY="")
+        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=valid_key, ENCRYPTION_KEY="", _env_file=None)
 
     with pytest.raises(ValueError, match="ENCRYPTION_KEY is required"):
-        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=valid_key, ENCRYPTION_KEY=short_key)
+        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=valid_key, ENCRYPTION_KEY=short_key, _env_file=None)
 
     # Missing or short JWT_SECRET_KEY fails startup
     with pytest.raises(ValueError, match="JWT_SECRET_KEY is required"):
-        Settings(ENVIRONMENT="production", JWT_SECRET_KEY="", ENCRYPTION_KEY=valid_key)
+        Settings(ENVIRONMENT="production", JWT_SECRET_KEY="", ENCRYPTION_KEY=valid_key, _env_file=None)
 
     with pytest.raises(ValueError, match="JWT_SECRET_KEY is required"):
-        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=short_key, ENCRYPTION_KEY=valid_key)
+        Settings(ENVIRONMENT="production", JWT_SECRET_KEY=short_key, ENCRYPTION_KEY=valid_key, _env_file=None)
+
 
 
 @pytest.mark.asyncio

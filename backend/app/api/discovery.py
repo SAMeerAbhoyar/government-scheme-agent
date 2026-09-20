@@ -1,3 +1,4 @@
+import uuid
 import logging
 from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -104,7 +105,7 @@ async def discover_by_profile(
         # Store in Recommendation history
         rec = Recommendation(
             user_id=current_user.id,
-            scheme_id=m.scheme_id,
+            scheme_id=uuid.UUID(str(m.scheme_id)),
             match_status=m.status,
             reason=explanation[:500] if explanation else m.status
         )
@@ -156,7 +157,8 @@ async def discover_by_query(
         scheme_ids.add(str(s.id))
 
     if scheme_ids:
-        all_schemes_res = await db.execute(select(Scheme).where(Scheme.id.in_(list(scheme_ids))))
+        uuid_list = [uuid.UUID(sid) if isinstance(sid, str) else sid for sid in scheme_ids]
+        all_schemes_res = await db.execute(select(Scheme).where(Scheme.id.in_(uuid_list)))
         schemes = all_schemes_res.scalars().all()
     else:
         schemes = []

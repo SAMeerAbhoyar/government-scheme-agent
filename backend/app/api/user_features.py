@@ -152,7 +152,8 @@ async def compare_schemes(
     profile_dict = profile_to_dict(user_profile)
 
     # Fetch schemes
-    schemes_res = await db.execute(select(Scheme).where(Scheme.id.in_(req.scheme_ids)))
+    scheme_uuids = [uuid.UUID(str(sid)) if not isinstance(sid, uuid.UUID) else sid for sid in req.scheme_ids]
+    schemes_res = await db.execute(select(Scheme).where(Scheme.id.in_(scheme_uuids)))
     schemes = schemes_res.scalars().all()
 
     if len(schemes) != len(req.scheme_ids):

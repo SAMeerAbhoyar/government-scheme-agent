@@ -1,38 +1,9 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy import String, Text, DateTime, ForeignKey, Float, JSON, Index, TypeDecorator, Integer
-from sqlalchemy.dialects.postgresql import TSVECTOR
+from sqlalchemy import String, Text, DateTime, ForeignKey, Float, JSON, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from pgvector.sqlalchemy import Vector
 from app.core.db import Base
-
-class VectorType(TypeDecorator):
-    """
-    Postgres uses pgvector.sqlalchemy.Vector(768).
-    SQLite (used in test suite) falls back to JSON column type.
-    """
-    impl = Vector(768)
-    cache_ok = True
-
-    def load_dialect_impl(self, dialect):
-        if dialect.name == "sqlite":
-            return dialect.type_descriptor(JSON)
-        return dialect.type_descriptor(Vector(768))
-
-class TSVectorType(TypeDecorator):
-    """
-    Postgres uses TSVECTOR.
-    SQLite falls back to Text.
-    """
-    impl = TSVECTOR
-    cache_ok = True
-
-    def load_dialect_impl(self, dialect):
-        if dialect.name == "sqlite":
-            return dialect.type_descriptor(Text)
-        return dialect.type_descriptor(TSVECTOR)
-
 
 class Scheme(Base):
     __tablename__ = "schemes"
@@ -94,14 +65,11 @@ class SchemeChunk(Base):
     section: Mapped[str] = mapped_column(String(50), nullable=False)
     text: Mapped[str] = mapped_column(Text, nullable=False)
     source_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-    embedding = mapped_column(VectorType, nullable=True)
-    tsv = mapped_column(TSVectorType, nullable=True)
+    embedding: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    tsv: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     scheme: Mapped["Scheme"] = relationship("Scheme", back_populates="chunks")
 
-    __table_args__ = (
-        Index("idx_scheme_chunks_tsv", "tsv", postgresql_using="gin"),
-    )
 
 class SourceRecord(Base):
     __tablename__ = "source_records"

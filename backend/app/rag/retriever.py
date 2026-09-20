@@ -5,12 +5,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.scheme import Scheme, SchemeChunk
 from app.rag.embeddings import BaseEmbeddingProvider, MockEmbedder
+from app.rag.vector_store import VectorStore, SQLiteNumpyVectorStore
 
 logger = logging.getLogger(__name__)
 
 class HybridRetriever:
-    def __init__(self, embedder: Optional[BaseEmbeddingProvider] = None):
+    def __init__(
+        self,
+        embedder: Optional[BaseEmbeddingProvider] = None,
+        vector_store: Optional[VectorStore] = None
+    ):
         self.embedder = embedder or MockEmbedder()
+        self.vector_store = vector_store or SQLiteNumpyVectorStore()
 
     async def search(
         self,
@@ -64,19 +70,13 @@ class HybridRetriever:
         vec_chunks = []
         try:
             query_vec = await self.embedder.get_embedding(query_clean)
-            vec_stmt = base_stmt.where(*filters).limit(20)
-            result = await db.execute(vec_stmt)
-            all_chunks = [(c, s) for c, s in result.all()]
-
-            # Score by vector similarity (dot product for unit vectors)
-            scored_vec = []
-            for chunk, scheme in all_chunks:
-                if chunk.embedding is not None and len(chunk.embedding) == len(query_vec):
-                    sim = sum(a * b for a, b in zip(chunk.embedding, query_vec))
-                else:
-                    sim = 0.0
-                scored_vec.append((sim, chunk, scheme))
-            scored_vec.sort(key=lambda x: x[0], reverse=True)
+            scored_vec = await self.vector_store.search(
+                db,
+                query_vector=query_vec,
+                state_filter=state_filter,
+                category_filter=category_filter,
+                top_k=20
+            )
             vec_chunks = [(c, s) for _, c, s in scored_vec]
         except Exception as e:
             logger.error(f"Vector search error: {str(e)}")

@@ -6,16 +6,16 @@ The **Automated Government Scheme Recommendation Agent** is a multi-tier platfor
 
 ### Strict Architectural Principles
 1. **Single Backend Framework**: FastAPI (Python 3.11+) handles all REST API endpoints. Node.js or Express are strictly disallowed.
-2. **Frontend Architecture**: Single Page Application built with React, Vite, Tailwind CSS, and React Router v6.
-3. **Database Architecture**: PostgreSQL 16 equipped with `pgvector` (`pgvector/pgvector:pg16`).
-4. **ORM & Migrations**: SQLAlchemy 2.0 (async via `asyncpg`) for database access and Alembic for schema migrations. Pydantic v2 is used exclusively for payload and domain model validation.
+2. **Frontend Architecture**: Gradio Web UI (`ui/`) with stateful JWT session management and pure component renderers.
+3. **Database Architecture**: SQLite 3 with `aiosqlite` async driver, FTS5 full-text search, and NumPy vector similarity matching.
+4. **ORM & Migrations**: SQLAlchemy 2.0 (async via `aiosqlite`) for database access and Alembic for schema migrations (using batch mode). Pydantic v2 is used exclusively for payload and domain model validation.
 5. **Authentication & Authorization**: Stateless JWT Bearer tokens with `bcrypt` password hashing. RBAC supporting `user` and `admin` roles.
 6. **Offline Ingestion Rule**: Web scraping, PDF extraction, and LLM extractions occur **strictly offline** as scheduled or CLI jobs. Request paths MUST NEVER invoke crawlers or external scraping.
 7. **Domain Allowlisting & Security**: Crawlers strictly enforce domain allowlists (`.gov.in`, `.nic.in`, `maharashtra.gov.in`, `myscheme.gov.in`, `scholarships.gov.in`).
 8. **Prompt-Injection Defense**: Extracted text is isolated as untrusted data. Prompts explicitly instruct LLMs to ignore embedded instructions and forbid tool invocation.
 9. **Grounding Verification**: Every leaf eligibility rule must contain a literal `source_quote` substring verified against raw document text before approval.
 10. **Deterministic Eligibility Rule Engine**: Scheme eligibility criteria matching is performed using **100% deterministic code** (`RuleGroup` & `RuleLeaf` evaluator). LLMs are strictly excluded from the core decision boundary.
-11. **Hybrid RAG Retrieval with RRF**: Searches merge PostgreSQL Full-Text Search (`tsvector`) and `pgvector` Cosine Similarity using Reciprocal Rank Fusion ($RRF\_Score = \frac{1}{60 + rank_{fts}} + \frac{1}{60 + rank_{vec}}$).
+11. **Hybrid RAG Retrieval with RRF**: Searches merge SQLite FTS5 Full-Text Search and NumPy Cosine Similarity using Reciprocal Rank Fusion ($RRF\_Score = \frac{1}{60 + rank_{fts}} + \frac{1}{60 + rank_{vec}}$).
 
 ---
 
@@ -38,8 +38,8 @@ The **Automated Government Scheme Recommendation Agent** is a multi-tier platfor
                                     v
 +-----------------------------------------------------------------------+
 |                             DATABASE                                  |
-|                   PostgreSQL 16 + pgvector                            |
-|  10 Relational Tables + GIN Index on Full-Text Search (tsvector)       |
+|                 SQLite 3 (aiosqlite / SQLiteVectorStore)              |
+|        Relational Tables + FTS5 Virtual Table + NumPy Vectors          |
 +-----------------------------------+-----------------------------------+
                                     ^
                                     | Hybrid RRF Retrieval & Rule Checks
@@ -59,10 +59,10 @@ The **Automated Government Scheme Recommendation Agent** is a multi-tier platfor
                                     | HTTP / REST (JWT Auth)
 +-----------------------------------+-----------------------------------+
 |                              FRONTEND                                 |
-|         React + Vite + Tailwind CSS + React Router v6                 |
-|  - Dashboard (Mode 1 & Mode 2)      - Saved Bookmarks                 |
-|  - Inline Missing-Info Questions    - Activity History                |
-|  - Side-by-Side Compare Matrix      - Scheme Detail & Feedback        |
+|                 Gradio Web UI (Python 4.40+)                          |
+|  - Auth & Profile Accordions        - Saved Bookmarks & History       |
+|  - Mode 1 & Mode 2 Discovery        - Admin Command Center            |
+|  - Compare Matrix & Explanations    - Notifications & Change Diffs    |
 +-----------------------------------------------------------------------+
 ```
 

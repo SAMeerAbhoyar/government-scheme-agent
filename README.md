@@ -18,11 +18,11 @@ An AI-ready full-stack platform for ingesting, structuring, matching, and recomm
                                  │             │
               ┌──────────────────┴──┐       ┌──┴──────────────────┐
               │  Matching Engine    │       │ Hybrid RRF Retriever│
-              │  (Deterministic)    │       │ (pgvector + tsv)    │
+              │  (Deterministic)    │       │ (FTS5 + NumPy)      │
               └──────────┬──────────┘       └──┬──────────────────┘
                          │                     │
               ┌──────────▼─────────────────────▼──────────┐
-              │      PostgreSQL 16 + pgvector Database    │
+              │        SQLite 3 Database (aiosqlite)      │
               └───────────────────────────────────────────┘
 ```
 
@@ -30,11 +30,12 @@ An AI-ready full-stack platform for ingesting, structuring, matching, and recomm
 
 ## Tech Stack
 - **Backend**: FastAPI (Python 3.11+), SQLAlchemy 2.0, Alembic, Pydantic v2, PyJWT, bcrypt, Fernet AES Encryption
+- **Database**: SQLite 3 with `aiosqlite` async driver (zero external DB server requirement for local dev)
 - **Ingestion & Extraction**: Httpx, Trafilatura, BeautifulSoup4, Pdfplumber, Google GenAI (Gemini)
-- **RAG & Hybrid Search**: PostgreSQL 16 + `pgvector` (Cosine Similarity) + `tsvector` (Full-Text Search) + Reciprocal Rank Fusion (RRF)
+- **RAG & Hybrid Search**: SQLite FTS5 Full-Text Search + NumPy Cosine Similarity + Reciprocal Rank Fusion (RRF)
 - **Frontend**: Gradio (Python 4.40+), pure HTML component renders, interactive State management
 - **Deployment**: Docker & Docker Compose
-- **Testing & CI**: Pytest (61 passing unit tests: backend + ui), GitHub Actions CI
+- **Testing & CI**: Pytest (67 passing unit tests: backend + ui + vector store), GitHub Actions CI
 
 ---
 

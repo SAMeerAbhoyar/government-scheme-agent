@@ -1,44 +1,21 @@
 version: '3.8'
 
 services:
-  db:
-    image: pgvector/pgvector:pg16
-    container_name: scheme_db
-    environment:
-      POSTGRES_USER: scheme_user
-      POSTGRES_PASSWORD: scheme_password
-      POSTGRES_DB: scheme_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U scheme_user -d scheme_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: scheme_backend
     environment:
-      POSTGRES_USER: scheme_user
-      POSTGRES_PASSWORD: scheme_password
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      POSTGRES_DB: scheme_db
-      DATABASE_URL: postgresql+asyncpg://scheme_user:scheme_password@db:5432/scheme_db
-      DATABASE_URL_SYNC: postgresql+psycopg://scheme_user:scheme_password@db:5432/scheme_db
+      DATABASE_URL: sqlite+aiosqlite:////app/data/scheme_agent.db
+      DATABASE_URL_SYNC: sqlite:////app/data/scheme_agent.db
       JWT_SECRET_KEY: super-secret-jwt-key-change-this-in-production-min-32-chars
       ENCRYPTION_KEY: a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H
       ENVIRONMENT: production
     ports:
       - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
+    volumes:
+      - ./data:/app/data
 
   ui:
     build:
@@ -52,6 +29,4 @@ services:
     depends_on:
       - backend
 
-volumes:
-  postgres_data:
 

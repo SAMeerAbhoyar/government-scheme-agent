@@ -6,6 +6,8 @@ import requests
 BASE_URL = "http://localhost:8000"
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     print("=" * 60)
     print("      GOVERNMENT SCHEME AGENT - SMOKE TEST PIPELINE")
     print("=" * 60)
@@ -37,7 +39,7 @@ def main():
     print("\n[3/7] Testing POST /auth/login...")
     login_res = requests.post(
         f"{BASE_URL}/auth/login",
-        data={"username": email, "password": "Password123!"},
+        json={"email": email, "password": "Password123!"},
         timeout=5
     )
     assert login_res.status_code == 200, f"Login failed: {login_res.text}"
@@ -61,15 +63,15 @@ def main():
 
     # 5. Mode 1 Discovery
     print("\n[5/7] Testing Mode 1 Discovery (POST /discover/query)...")
-    query_payload = {"prompt": "scholarship for engineering student in maharashtra"}
-    m1_res = requests.post(f"{BASE_URL}/discover/query", json=query_payload, headers=headers, timeout=10)
+    query_payload = {"query": "scholarship for engineering student in maharashtra"}
+    m1_res = requests.post(f"{BASE_URL}/discover/query", json=query_payload, headers=headers, timeout=30)
     assert m1_res.status_code == 200, f"Mode 1 failed: {m1_res.text}"
     m1_data = m1_res.json()
     print(f"  ✓ Mode 1 returned {len(m1_data.get('results', []))} scheme matches!")
 
     # 6. Mode 2 Discovery
     print("\n[6/7] Testing Mode 2 Discovery (POST /discover/profile)...")
-    m2_res = requests.post(f"{BASE_URL}/discover/profile", json={}, headers=headers, timeout=10)
+    m2_res = requests.post(f"{BASE_URL}/discover/profile", json={}, headers=headers, timeout=30)
     assert m2_res.status_code == 200, f"Mode 2 failed: {m2_res.text}"
     m2_data = m2_res.json()
     print(f"  ✓ Mode 2 returned {len(m2_data.get('results', []))} matched schemes!")
