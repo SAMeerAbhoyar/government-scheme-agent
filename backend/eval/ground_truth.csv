@@ -1,0 +1,10 @@
+persona_id,scheme_keyword,expected_status
+P1,Post-Matric Scholarship,potentially_relevant
+P1,PM-KISAN,not_matching
+P2,PM-KISAN,potentially_relevant
+P2,Post-Matric Scholarship,not_matching
+P3,Education & Higher Learning,potentially_relevant
+P3,PM-KISAN,not_matching
+P4,PM-KISAN,not_matching
+P4,Post-Matric Scholarship,not_matching
+P5,PM-KISAN,not_matching

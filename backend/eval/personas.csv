@@ -1,0 +1,6 @@
+persona_id,name,state,age,annual_income,social_category,bpl_card,disability,education_level,land_holding_acres
+P1,Ramesh Kamble (SC Student),Maharashtra,20,180000,SC,false,false,Undergraduate,0
+P2,Sanjay Patil (Small Farmer),Maharashtra,42,120000,General,true,false,10th Pass,2.5
+P3,Priya Deshmukh (EWS Student),Maharashtra,21,450000,EWS,false,false,Undergraduate,0
+P4,Vikram Mehta (High Income Exec),Central,35,15000000,General,false,false,Postgraduate,0
+P5,Shantabai More (Senior Citizen),Maharashtra,68,50000,SC,true,false,None,0
