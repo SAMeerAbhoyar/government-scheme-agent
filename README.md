@@ -8,8 +8,8 @@ An AI-ready full-stack platform for ingesting, structuring, matching, and recomm
 
 ```
                           ┌───────────────────────────┐
-                          │   Citizen / Admin UI      │
-                          │   (React + Vite + Tailwind│
+                          │     Gradio Web UI         │
+                          │   (Python + Gradio 4.40+) │
                           └─────────────┬─────────────┘
                                         │ REST API (JWT Auth)
                           ┌─────────────▼─────────────┐
@@ -32,9 +32,9 @@ An AI-ready full-stack platform for ingesting, structuring, matching, and recomm
 - **Backend**: FastAPI (Python 3.11+), SQLAlchemy 2.0, Alembic, Pydantic v2, PyJWT, bcrypt, Fernet AES Encryption
 - **Ingestion & Extraction**: Httpx, Trafilatura, BeautifulSoup4, Pdfplumber, Google GenAI (Gemini)
 - **RAG & Hybrid Search**: PostgreSQL 16 + `pgvector` (Cosine Similarity) + `tsvector` (Full-Text Search) + Reciprocal Rank Fusion (RRF)
-- **Frontend**: React, Vite, Tailwind CSS, React Router v6, Axios, Lucide Icons
+- **Frontend**: Gradio (Python 4.40+), pure HTML component renders, interactive State management
 - **Deployment**: Docker & Docker Compose
-- **Testing & CI**: Pytest (51 passing unit tests), GitHub Actions CI
+- **Testing & CI**: Pytest (61 passing unit tests: backend + ui), GitHub Actions CI
 
 ---
 
@@ -49,7 +49,7 @@ Then seed the offline demo database:
 cd backend
 python -m app.seed_demo
 ```
-- **Frontend URL**: `http://localhost:80`
+- **Gradio UI URL**: `http://localhost:7860`
 - **Backend API Docs**: `http://localhost:8000/docs`
 
 ---
@@ -70,11 +70,11 @@ python -m app.seed_demo
 uvicorn app.main:app --reload --port 8000
 ```
 
-#### 2. Frontend Setup
+#### 2. Gradio UI Setup
 ```bash
-cd frontend
-npm install
-npm run dev
+cd ui
+pip install -r requirements.txt
+python app.py
 ```
 
 ---
@@ -84,30 +84,33 @@ npm run dev
 1. **Sign In as Demo Admin**:
    - **Email**: `admin@demo.gov.in`
    - **Password**: `Admin@123`
-   - Navigate to `/admin` to view the **Admin Command Center**, system metrics, unverified queue, source health, and changes feed.
+   - View the **Admin Command Center** tab: system metrics, unverified queue, source health, changes feed, and feedback log.
 
 2. **Sign In as Demo Persona 1 (Rahul Sharma - Student)**:
    - **Email**: `rahul.student@demo.gov.in`
    - **Password**: `User@123`
    - **Mode 1 Search**: Type query *"scholarship for engineering student in maharashtra"*. View matched schemes, structured match results, and explanations.
-   - **Save Scheme**: Click "Save Scheme" to bookmark a scheme.
+   - **Save Scheme**: Save scheme to your bookmarks.
 
 3. **Sign In as Demo Persona 2 (Ramesh Patil - Farmer)**:
    - **Email**: `ramesh.farmer@demo.gov.in`
    - **Password**: `User@123`
-   - **Mode 2 Matching**: Click "Discover by Profile" to run automated profile matching against all active Central & Maharashtra schemes.
+   - **Mode 2 Matching**: Go to "Discover by Profile" to run automated profile matching against all active Central & Maharashtra schemes.
 
 4. **Notifications & Change Detection**:
-   - Check `/notifications` to see alerts for approaching deadlines, new scheme matches, and scheme version diffs.
+   - Check the **Notifications** tab to see alerts for approaching deadlines, new scheme matches, and scheme version diffs.
 
 ---
 
 ## Verification & Testing Commands
 
-### 1. Run Complete Pytest Suite (51 Tests)
+### 1. Run Complete Pytest Suite (Backend & UI)
 ```bash
-cd backend
-python -m pytest
+# Backend unit tests
+cd backend && python -m pytest
+
+# Gradio UI unit tests
+cd .. && python -m pytest ui/tests/
 ```
 
 ### 2. Run API Smoke Test Script
@@ -125,7 +128,9 @@ python scripts/smoke_test.py
 ---
 
 ## Completion Status
-- [x] **Phase 1**: FastAPI backend, PostgreSQL 16 + pgvector, Auth, Profile CRUD, Tri-State Eligibility Engine, React Frontend.
+- [x] **Phase 1**: FastAPI backend, PostgreSQL 16 + pgvector, Auth, Profile CRUD, Tri-State Eligibility Engine.
 - [x] **Phase 2**: Sources Allowlist, Crawler, LLM Extractor, Grounding Verification, Versioning, Hybrid Search RRF.
 - [x] **Phase 3**: Matching Engine (Mode 1 & Mode 2), Recommendation Explainer Agent with Guardrail Fact Inspector, Saved/History/Compare/Feedback.
 - [x] **Phase 4**: Change Detection & Version Diffs, Notifications & Deduplication, Admin Dashboard, Hardening (Security Headers, Rate Limiting, Fernet AES Encryption, PII Redaction, No-500 Fallbacks), Docker & Demo Readiness.
+- [x] **Phase 5**: Complete Gradio UI replacement (`ui/`) with stateful JWT auth, dynamic role tabs, pure component renderers, unit tests, Docker Compose, and CI pipeline.
+

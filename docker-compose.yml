@@ -39,15 +39,18 @@ services:
       db:
         condition: service_healthy
 
-  frontend:
+  ui:
     build:
-      context: ./frontend
+      context: ./ui
       dockerfile: Dockerfile
-    container_name: scheme_frontend
+    container_name: scheme_ui
     ports:
-      - "80:80"
+      - "7860:7860"
+    environment:
+      - API_BASE_URL=http://backend:8000
     depends_on:
       - backend
 
 volumes:
   postgres_data:
+

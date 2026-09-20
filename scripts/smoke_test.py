@@ -75,10 +75,22 @@ def main():
     print(f"  ✓ Mode 2 returned {len(m2_data.get('results', []))} matched schemes!")
 
     # 7. Notifications
-    print("\n[7/7] Testing GET /notifications...")
+    print("\n[7/8] Testing GET /notifications...")
     notif_res = requests.get(f"{BASE_URL}/notifications", headers=headers, timeout=5)
     assert notif_res.status_code == 200, f"Notifications failed: {notif_res.text}"
     print(f"  ✓ Notifications endpoint returned {len(notif_res.json().get('notifications', []))} items!")
+
+    # 8. Gradio UI Accessibility (Optional check if UI is running on 7860)
+    print("\n[8/8] Checking Gradio UI status...")
+    ui_url = "http://localhost:7860"
+    try:
+        ui_res = requests.get(ui_url, timeout=3)
+        if ui_res.status_code == 200:
+            print("  ✓ Gradio UI is online and reachable at http://localhost:7860!")
+        else:
+            print(f"  ℹ️ Gradio UI returned status code {ui_res.status_code}")
+    except Exception:
+        print("  ℹ️ Gradio UI service is offline (start with `python ui/app.py` or docker-compose to enable)")
 
     print("\n" + "=" * 60)
     print("      🎉 ALL SMOKE TESTS PASSED SUCCESSFULLY!")
