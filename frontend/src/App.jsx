@@ -11,6 +11,7 @@ import Saved from './pages/Saved';
 import History from './pages/History';
 import Compare from './pages/Compare';
 import SchemeDetail from './pages/SchemeDetail';
+import Notifications from './pages/Notifications';
 
 function App() {
   return (
@@ -49,6 +50,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Compare />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute>
+                    <Notifications />
                   </ProtectedRoute>
                 }
               />

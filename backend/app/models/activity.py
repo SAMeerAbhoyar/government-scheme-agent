@@ -54,3 +54,17 @@ class Feedback(Base):
 
     user: Mapped["User"] = relationship("User", back_populates="feedback")
     recommendation: Mapped["Recommendation"] = relationship("Recommendation", back_populates="feedback")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    type: Mapped[str] = mapped_column(String(50), nullable=False)
+    scheme_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("schemes.id", ondelete="CASCADE"), nullable=True)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    user: Mapped["User"] = relationship("User", back_populates="notifications")
+    scheme: Mapped[Optional["Scheme"]] = relationship("Scheme")

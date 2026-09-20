@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 from app.core.config import settings
-from app.api import auth, profile, health, schemes, admin, discovery, user_features
+from app.api import auth, profile, health, schemes, admin, discovery, user_features, notifications
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -42,6 +42,7 @@ app.include_router(schemes.router)
 app.include_router(admin.router)
 app.include_router(discovery.router)
 app.include_router(user_features.router)
+app.include_router(notifications.router)
 
 @app.get("/")
 async def root():

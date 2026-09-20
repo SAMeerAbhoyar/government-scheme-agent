@@ -1,12 +1,22 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { Landmark, User, LogOut, Shield, Bookmark, History, Layers, Search } from 'lucide-react';
+import { Landmark, User, LogOut, Shield, Bookmark, History, Layers, Search, Bell } from 'lucide-react';
+import api from '../services/api';
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      api.get('/notifications')
+        .then(res => setUnreadCount(res.data.unread_count))
+        .catch(() => {});
+    }
+  }, [user, location.pathname]);
 
   const handleLogout = async () => {
     await logout();
@@ -65,6 +75,19 @@ const Navbar = () => {
               >
                 <Layers className="w-4 h-4" />
                 <span>Compare</span>
+              </Link>
+
+              <Link
+                to="/notifications"
+                className={`relative flex items-center gap-1.5 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${isActive('/notifications') ? 'bg-indigo-50 text-indigo-700 font-bold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+              >
+                <Bell className="w-4 h-4" />
+                <span>Notifications</span>
+                {unreadCount > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             </nav>
 
