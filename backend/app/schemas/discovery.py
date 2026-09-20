@@ -8,7 +8,7 @@ class ProfileDiscoverRequest(BaseModel):
     state_filter: Optional[str] = None
 
 class QueryDiscoverRequest(BaseModel):
-    query: str
+    query: Optional[str] = None
     category_filter: Optional[str] = None
     state_filter: Optional[str] = None
 

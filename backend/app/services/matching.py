@@ -35,89 +35,118 @@ class MatchResult(BaseModel):
     application_url: Optional[str] = None
     match_score: float = 0.0
 
+def safe_match_scheme_against_profile(profile_data: Dict[str, Any], scheme: Scheme) -> MatchResult:
+    """
+    Safely matches a scheme against a profile data dict.
+    On any error, returns status 'cannot_determine' with reason 'Could not evaluate this scheme',
+    logs the error, and continues so one bad scheme cannot break the whole search.
+    """
+    try:
+        return match_scheme_against_profile(profile_data, scheme)
+    except Exception as e:
+        logger.error(f"Error matching scheme '{getattr(scheme, 'name', 'unknown')}' ({getattr(scheme, 'id', '')}): {e}", exc_info=True)
+        return MatchResult(
+            scheme_id=str(getattr(scheme, "id", "")),
+            scheme_name=getattr(scheme, "name", "Government Scheme"),
+            department=getattr(scheme, "department", "Government Portal"),
+            category=getattr(scheme, "category", "General"),
+            state=getattr(scheme, "state", "Central"),
+            status="cannot_determine",
+            unverified=(getattr(scheme, "status", "") == "unverified"),
+            extraction_confidence=getattr(scheme, "extraction_confidence", None),
+            rule_results=[],
+            missing_fields=[],
+            deadline_date=getattr(scheme, "deadline_date", None),
+            source_url=getattr(scheme, "source_url", None),
+            application_url=getattr(scheme, "application_url", None) or getattr(scheme, "source_url", None),
+            match_score=30.0
+        )
+
 def match_scheme_against_profile(profile_data: Dict[str, Any], scheme: Scheme) -> MatchResult:
-    rules = scheme.eligibility_rules or {}
-    
-    # Run deterministic eligibility evaluator
-    eval_res: SchemeEvaluationResult = evaluate_eligibility(rules, profile_data)
-    
-    rule_results: List[RuleResultDetail] = []
-    missing_fields_set = set()
-    no_match_count = 0
-    unknown_count = 0
-    match_count = 0
+    try:
+        rules = getattr(scheme, "eligibility_rules", {}) or {}
+        eval_res: SchemeEvaluationResult = evaluate_eligibility(rules, profile_data or {})
 
-    for detail in eval_res.details:
-        rule_results.append(RuleResultDetail(
-            field=detail.field,
-            op=detail.op,
-            required_value=detail.expected_value,
-            user_value=detail.actual_value,
-            result=detail.status.value,
-            source_quote=detail.source_quote
-        ))
-        
-        if detail.status == EvaluationStatus.NO_MATCH:
-            no_match_count += 1
-        elif detail.status == EvaluationStatus.UNKNOWN:
-            unknown_count += 1
-            missing_fields_set.add(detail.field)
-        elif detail.status == EvaluationStatus.MATCH:
-            match_count += 1
+        rule_results: List[RuleResultDetail] = []
+        missing_fields_set = set()
+        no_match_count = 0
+        unknown_count = 0
+        match_count = 0
 
-    # Status classification:
-    # not_matching: if ANY rule is NO_MATCH
-    # cannot_determine: if NO rule is NO_MATCH, but at least one rule is UNKNOWN
-    # potentially_relevant: if all evaluated rules pass (0 NO_MATCH and 0 UNKNOWN)
-    if no_match_count > 0:
-        match_status = "not_matching"
-    elif unknown_count > 0:
-        match_status = "cannot_determine"
-    else:
-        match_status = "potentially_relevant"
+        for detail in eval_res.details:
+            f_name = str(detail.field) if detail.field is not None else "unknown"
+            rule_results.append(RuleResultDetail(
+                field=f_name,
+                op=str(detail.op),
+                required_value=detail.expected_value,
+                user_value=detail.actual_value,
+                result=detail.status.value if hasattr(detail.status, "value") else str(detail.status),
+                source_quote=detail.source_quote
+            ))
 
-    # Score calculation for tie-breaking
-    # Base score by status
-    status_weights = {
-        "potentially_relevant": 100.0,
-        "cannot_determine": 50.0,
-        "not_matching": 0.0
-    }
-    score = status_weights[match_status]
-    
-    # Deduct for unknowns
-    score -= (len(missing_fields_set) * 5.0)
-    
-    # Deduct for unverified scheme
-    is_unverified = scheme.status == "unverified"
-    if is_unverified:
-        score -= 20.0
+            if detail.status == EvaluationStatus.NO_MATCH:
+                no_match_count += 1
+            elif detail.status == EvaluationStatus.UNKNOWN:
+                unknown_count += 1
+                missing_fields_set.add(f_name)
+            elif detail.status == EvaluationStatus.MATCH:
+                match_count += 1
 
-    return MatchResult(
-        scheme_id=str(scheme.id),
-        scheme_name=scheme.name,
-        department=scheme.department,
-        category=scheme.category,
-        state=scheme.state,
-        status=match_status,
-        unverified=is_unverified,
-        extraction_confidence=scheme.extraction_confidence,
-        rule_results=rule_results,
-        missing_fields=sorted(list(missing_fields_set)),
-        deadline_date=scheme.deadline_date,
-        source_url=scheme.source_url,
-        application_url=scheme.application_url or scheme.source_url,
-        match_score=max(0.0, score)
-    )
+        if no_match_count > 0:
+            match_status = "not_matching"
+        elif unknown_count > 0:
+            match_status = "cannot_determine"
+        else:
+            match_status = "potentially_relevant"
+
+        status_weights = {
+            "potentially_relevant": 100.0,
+            "cannot_determine": 50.0,
+            "not_matching": 0.0
+        }
+        score = status_weights[match_status]
+        score -= (len(missing_fields_set) * 5.0)
+
+        is_unverified = (getattr(scheme, "status", "") == "unverified")
+        if is_unverified:
+            score -= 20.0
+
+        return MatchResult(
+            scheme_id=str(getattr(scheme, "id", "")),
+            scheme_name=getattr(scheme, "name", "Government Scheme"),
+            department=getattr(scheme, "department", "Government Portal"),
+            category=getattr(scheme, "category", "General"),
+            state=getattr(scheme, "state", "Central"),
+            status=match_status,
+            unverified=is_unverified,
+            extraction_confidence=getattr(scheme, "extraction_confidence", None),
+            rule_results=rule_results,
+            missing_fields=sorted(list(missing_fields_set)),
+            deadline_date=getattr(scheme, "deadline_date", None),
+            source_url=getattr(scheme, "source_url", None),
+            application_url=getattr(scheme, "application_url", None) or getattr(scheme, "source_url", None),
+            match_score=max(0.0, score)
+        )
+    except Exception as e:
+        logger.error(f"Error in match_scheme_against_profile for scheme {getattr(scheme, 'id', '')}: {e}", exc_info=True)
+        return MatchResult(
+            scheme_id=str(getattr(scheme, "id", "")),
+            scheme_name=getattr(scheme, "name", "Government Scheme"),
+            department=getattr(scheme, "department", "Government Portal"),
+            category=getattr(scheme, "category", "General"),
+            state=getattr(scheme, "state", "Central"),
+            status="cannot_determine",
+            unverified=(getattr(scheme, "status", "") == "unverified"),
+            extraction_confidence=getattr(scheme, "extraction_confidence", None),
+            rule_results=[],
+            missing_fields=[],
+            deadline_date=getattr(scheme, "deadline_date", None),
+            source_url=getattr(scheme, "source_url", None),
+            application_url=getattr(scheme, "application_url", None) or getattr(scheme, "source_url", None),
+            match_score=30.0
+        )
 
 def rank_matches(matches: List[MatchResult]) -> List[MatchResult]:
-    """
-    Ranks matches according to strict priority:
-    1. Status: potentially_relevant > cannot_determine > not_matching
-    2. Verification: Active (verified) > Unverified
-    3. Fewer missing fields (fewer unknowns)
-    4. Nearest deadline date
-    """
     status_order = {
         "potentially_relevant": 0,
         "cannot_determine": 1,
@@ -128,10 +157,11 @@ def rank_matches(matches: List[MatchResult]) -> List[MatchResult]:
         s_rank = status_order.get(m.status, 3)
         v_rank = 1 if m.unverified else 0
         missing_count = len(m.missing_fields)
-        
-        # Deadline timestamp (none = infinity)
-        deadline_ts = m.deadline_date.timestamp() if m.deadline_date else float('inf')
-        
+        deadline_ts = m.deadline_date.timestamp() if (m.deadline_date and hasattr(m.deadline_date, "timestamp")) else float('inf')
         return (s_rank, v_rank, missing_count, deadline_ts)
 
-    return sorted(matches, key=sort_key)
+    try:
+        return sorted(matches, key=sort_key)
+    except Exception as e:
+        logger.error(f"Error ranking matches: {e}")
+        return matches

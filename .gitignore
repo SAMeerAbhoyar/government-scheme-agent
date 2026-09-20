@@ -43,3 +43,17 @@ data/
 *.db-wal
 *.db-shm
 *.db-journal
+
+venv/
+.venv/
+node_modules/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+*.db-wal
+*.db-shm
+data/
+dist/
+.env
+!.env.example

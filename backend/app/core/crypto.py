@@ -30,12 +30,12 @@ def decrypt_value(val: Optional[str], key: Optional[str] = None) -> Optional[str
         # Plaintext legacy value fallback
         return val_str
 
-    f = Fernet(get_fernet_key(key))
     try:
+        f = Fernet(get_fernet_key(key))
         return f.decrypt(val_str.encode('utf-8')).decode('utf-8')
     except Exception as e:
-        logger.error("Failed to decrypt Fernet token: invalid key or corrupted payload")
-        raise ValueError("Failed to decrypt value: invalid key or corrupted Fernet token") from e
+        logger.warning(f"Failed to decrypt Fernet token: {e}. Treating value as None.")
+        return None
 
 class EncryptedString(TypeDecorator):
     """

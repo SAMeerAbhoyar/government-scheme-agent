@@ -81,7 +81,7 @@ sources:
   - id: "src-12-pm-svanidhi"
     name: "PM Street Vendor AtmaNirbhar Nidhi (PM SVANidhi)"
     state: "Central"
-    type: "html"
+    type: "pdf"
     url: "https://pmsvanidhi.mohua.gov.in/SchemeGuidelines.pdf"
 
   - id: "src-13-maharashtra-farming-subsidy"
@@ -99,7 +99,7 @@ sources:
   - id: "src-15-pm-vishwakarma"
     name: "PM Vishwakarma Kaushal Samman Scheme"
     state: "Central"
-    type: "html"
+    type: "pdf"
     url: "https://pmvishwakarma.gov.in/Guidelines.pdf"
 
   - id: "src-16-maharashtra-bal-sangopan"
@@ -121,7 +121,7 @@ sources:
     url: "https://maharashtra.gov.in/SchemeData/Shravanbal"
 
   - id: "src-19-sanjay-gandhi-niradhar"
-    name: "Sanjay Gandhi Niradhar An अनुदान Scheme Maharashtra"
+    name: "Sanjay Gandhi Niradhar Anudan Scheme Maharashtra"
     state: "Maharashtra"
     type: "html"
     url: "https://maharashtra.gov.in/SchemeData/SanjayGandhiNiradhar"
@@ -129,5 +129,5 @@ sources:
   - id: "src-20-pm-poshan"
     name: "PM POSHAN Mid Day Meal Scheme"
     state: "Central"
-    type: "html"
+    type: "pdf"
     url: "https://pmposhan.education.gov.in/Guidelines.pdf"

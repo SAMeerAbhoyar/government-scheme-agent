@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Automated Government Scheme Recommendation Agent"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+    SQL_ECHO: bool = False
 
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./scheme_agent.db"

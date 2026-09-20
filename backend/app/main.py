@@ -31,11 +31,11 @@ app.add_middleware(
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     errors = []
     for error in exc.errors():
-        loc = " -> ".join([str(x) for x in error.get("loc", [])])
-        errors.append({"location": loc, "message": error.get("msg")})
+        loc = [str(x) for x in error.get("loc", [])]
+        errors.append({"loc": loc, "msg": error.get("msg", "Validation error")})
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": "Validation Error", "errors": errors}
+        content={"detail": errors}
     )
 
 # Include Routers

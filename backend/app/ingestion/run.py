@@ -39,6 +39,7 @@ async def get_working_session_maker():
         logger.info("PostgreSQL service not reachable on localhost:5432. Falling back to local async SQLite db 'scheme_agent.db' for CLI ingestion...")
         sqlite_engine = create_async_engine(
             "sqlite+aiosqlite:///scheme_agent.db",
+            echo=settings.SQL_ECHO,
             future=True
         )
         async with sqlite_engine.begin() as conn:

@@ -5,16 +5,16 @@ from ui.components.admin import render_admin_metrics, render_unverified_queue
 
 def test_render_status_badge():
     b_relevant = render_status_badge("potentially_relevant")
-    assert "Potentially Relevant" in b_relevant
+    assert "Likely eligible" in b_relevant
     assert "#d1fae5" in b_relevant
 
     b_cannot = render_status_badge("cannot_determine")
-    assert "Cannot Determine" in b_cannot
+    assert "Need more info" in b_cannot
     assert "#fef3c7" in b_cannot
 
     b_not = render_status_badge("not_matching")
-    assert "Not Currently Matching" in b_not
-    assert "#ffe4e6" in b_not
+    assert "Not eligible right now" in b_not
+    assert "#f1f5f9" in b_not
 
     b_unverified = render_status_badge("potentially_relevant", unverified=True)
     assert "Unverified" in b_unverified
@@ -27,7 +27,7 @@ def test_render_rule_rows():
     ]
     html = render_rule_rows(rules)
     assert "✓" in html
-    assert "✗" in html
+    assert "✕" in html
     assert "?" in html
     assert "Age" in html
     assert "Social Category" in html
@@ -51,10 +51,10 @@ def test_render_scheme_card():
     card_html = render_scheme_card(match)
     assert "Test Engineering Scholarship" in card_html
     assert "Higher Education" in card_html
-    assert "Potentially Relevant" in card_html
+    assert "Likely eligible" in card_html
     assert "Unverified" in card_html
-    assert "Official Source" in card_html
-    assert "Apply Online" in card_html
+    assert "Official page" in card_html
+    assert "Apply" in card_html
     assert "Why am I seeing this?" in card_html
 
 def test_render_comparison_table():

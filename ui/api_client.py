@@ -33,15 +33,35 @@ class APIClient:
         elif response.status_code == 422:
             try:
                 data = response.json()
-                detail = data.get("detail", "Validation error.")
+                detail = data.get("detail")
                 if isinstance(detail, list):
-                    msg = "; ".join([f"{item.get('loc', [])}: {item.get('msg', '')}" for item in detail if isinstance(item, dict)])
-                    raise APIClientError(f"Validation Error: {msg}", status_code=422)
-                raise APIClientError(f"Validation Error: {detail}", status_code=422)
+                    errors = []
+                    for item in detail:
+                        if isinstance(item, dict):
+                            loc = item.get("loc", [])
+                            msg = item.get("msg") or item.get("message") or "invalid value"
+                            if isinstance(loc, list) and loc:
+                                field = str(loc[-1])
+                            elif isinstance(loc, str):
+                                field = loc.split("->")[-1].strip()
+                            else:
+                                field = "input"
+                            errors.append(f"{field}: {msg}")
+                        elif isinstance(item, str):
+                            errors.append(item)
+                    if errors:
+                        err_msg = "; ".join(errors)
+                    else:
+                        err_msg = "invalid request input"
+                elif isinstance(detail, str):
+                    err_msg = detail
+                else:
+                    err_msg = "invalid request input"
+                raise APIClientError(err_msg, status_code=422)
             except APIClientError:
                 raise
             except Exception:
-                raise APIClientError("Unprocessable entity.", status_code=422)
+                raise APIClientError("invalid request input", status_code=422)
         else:
             try:
                 data = response.json()
@@ -100,18 +120,29 @@ class APIClient:
         except httpx.RequestError as e:
             raise APIClientError(f"Connection error: {str(e)}", status_code=503)
 
-    def discover_query(self, token: str, prompt: str) -> Dict[str, Any]:
+    def answer_missing_info(self, token: str, field_name: str, value: Any) -> Dict[str, Any]:
+        return self.submit_profile_answers(token, {field_name: value})
+
+    def discover_query(self, token: str, query: str, category_filter: Optional[str] = None, state_filter: Optional[str] = None) -> Dict[str, Any]:
         url = f"{self.base_url}/discover/query"
-        payload = {"prompt": prompt}
+        payload: Dict[str, Any] = {"query": query}
+        if category_filter and category_filter != "All":
+            payload["category_filter"] = category_filter
+        if state_filter:
+            payload["state_filter"] = state_filter
         try:
             res = httpx.post(url, json=payload, headers=self._get_headers(token), timeout=25.0)
             return self._handle_response(res)
         except httpx.RequestError as e:
             raise APIClientError(f"Connection error: {str(e)}", status_code=503)
 
-    def discover_profile(self, token: str) -> Dict[str, Any]:
+    def discover_profile(self, token: str, category_filter: Optional[str] = None, state_filter: Optional[str] = None) -> Dict[str, Any]:
         url = f"{self.base_url}/discover/profile"
-        payload = {}
+        payload: Dict[str, Any] = {}
+        if category_filter and category_filter != "All":
+            payload["category_filter"] = category_filter
+        if state_filter:
+            payload["state_filter"] = state_filter
         try:
             res = httpx.post(url, json=payload, headers=self._get_headers(token), timeout=25.0)
             return self._handle_response(res)
