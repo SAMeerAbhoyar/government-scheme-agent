@@ -1,7 +1,8 @@
 services:
   - type: web
     name: scheme-backend
-    env: python
+    runtime: python
+    plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: bash ../scripts/start_backend.sh
@@ -11,11 +12,21 @@ services:
         value: 3.11.6
       - key: ENVIRONMENT
         value: production
+      - key: DEBUG
+        value: "false"
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: EMBEDDING_DIMENSION
+        value: "768"
       - key: JWT_SECRET_KEY
         sync: false
       - key: ENCRYPTION_KEY
         sync: false
       - key: LLM_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        sync: false
+      - key: EMBEDDING_MODEL
         sync: false
       - key: SEED_ADMIN_EMAIL
         sync: false
@@ -24,7 +35,8 @@ services:
 
   - type: web
     name: scheme-ui
-    env: python
+    runtime: python
+    plan: free
     rootDir: .
     buildCommand: pip install -r ui/requirements.txt
     startCommand: python ui/app.py
