@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     MAX_CONSECUTIVE_FETCH_FAILURES: int = 3
     SEND_EMAIL_NOTIFICATIONS: bool = False
     PROFILE_ENCRYPTION_KEY: str = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H"
+    ENABLE_INGESTION_SCHEDULER: bool = False
+    RATE_LIMIT_PER_MINUTE: int = 60
 
     model_config = SettingsConfigDict(
         env_file=".env",
