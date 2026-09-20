@@ -835,6 +835,7 @@ with gr.Blocks(title="Government Scheme Finder") as demo:
 
 if __name__ == "__main__":
     server_name = os.getenv("GRADIO_SERVER_NAME", "127.0.0.1")
-    server_port = int(os.getenv("GRADIO_SERVER_PORT", "7860"))
+    server_port = int(os.getenv("PORT", os.getenv("GRADIO_SERVER_PORT", "7860")))
+    share_flag = os.getenv("GRADIO_SHARE", "False").lower() in ("true", "1")
     logger.info(f"Starting Gradio UI on {server_name}:{server_port}...")
-    demo.launch(server_name=server_name, server_port=server_port, share=False, theme=theme, css=custom_css)
+    demo.launch(server_name=server_name, server_port=server_port, share=share_flag, theme=theme, css=custom_css)

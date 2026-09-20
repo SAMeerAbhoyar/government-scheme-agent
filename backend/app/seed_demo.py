@@ -14,126 +14,113 @@ from app.rag.embeddings import MockEmbedder
 from app.services.matching import match_scheme_against_profile
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("SeedDemo")
+import os
 
-DEMO_USERS = [
-    {
-        "name": "Demo Admin",
-        "email": "admin@demo.gov.in",
-        "password": "Admin@123",
-        "role": "admin",
-        "profile": {}
-    },
-    {
-        "name": "Rahul Sharma",
-        "email": "rahul.student@demo.gov.in",
-        "password": "User@123",
-        "role": "user",
-        "profile": {
-            "age": 21,
-            "gender": "male",
-            "state": "Maharashtra",
-            "district": "Pune",
-            "rural_urban": "urban",
-            "education_level": "Undergraduate",
-            "course": "B.Tech Engineering",
-            "occupation": "Student",
-            "annual_income": 120000.0,
-            "social_category": "SC",
-            "disability": False,
-            "minority": False,
-            "bpl_card": False,
-            "land_holding_acres": 0.0,
-            "marital_status": "single"
+SEED_ADMIN_EMAIL = os.getenv("SEED_ADMIN_EMAIL")
+SEED_ADMIN_PASSWORD = os.getenv("SEED_ADMIN_PASSWORD")
+
+def get_demo_users() -> List[Dict[str, Any]]:
+    users = []
+    if SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD:
+        users.append({
+            "name": "Demo Admin",
+            "email": SEED_ADMIN_EMAIL.strip(),
+            "password": SEED_ADMIN_PASSWORD.strip(),
+            "role": "admin",
+            "profile": {}
+        })
+
+    users.extend([
+        {
+            "name": "Rahul Sharma",
+            "email": "rahul.student@demo.gov.in",
+            "password": "User@123",
+            "role": "user",
+            "profile": {
+                "age": 21,
+                "gender": "male",
+                "state": "Maharashtra",
+                "district": "Pune",
+                "rural_urban": "urban",
+                "education_level": "Undergraduate",
+                "course": "B.Tech Engineering",
+                "occupation": "Student",
+                "annual_income": 120000.0,
+                "social_category": "SC",
+                "disability": False,
+                "minority": False,
+                "bpl_card": False,
+                "land_holding_acres": 0.0,
+                "marital_status": "single"
+            }
+        },
+        {
+            "name": "Ramesh Patil",
+            "email": "ramesh.farmer@demo.gov.in",
+            "password": "User@123",
+            "role": "user",
+            "profile": {
+                "age": 45,
+                "gender": "male",
+                "state": "Maharashtra",
+                "district": "Nashik",
+                "rural_urban": "rural",
+                "occupation": "Farmer",
+                "annual_income": 85000.0,
+                "social_category": "General",
+                "bpl_card": False,
+                "disability": False,
+                "minority": False,
+                "land_holding_acres": 2.5,
+                "marital_status": "married"
+            }
+        },
+        {
+            "name": "Anita Deshmukh",
+            "email": "anita.women@demo.gov.in",
+            "password": "User@123",
+            "role": "user",
+            "profile": {
+                "age": 32,
+                "gender": "female",
+                "state": "Maharashtra",
+                "district": "Nagpur",
+                "rural_urban": "urban",
+                "occupation": "Self-Employed",
+                "annual_income": 95000.0,
+                "social_category": "OBC",
+                "bpl_card": True,
+                "disability": False,
+                "minority": False,
+                "land_holding_acres": 0.0,
+                "marital_status": "married"
+            }
+        },
+        {
+            "name": "Eknath Kulkarni",
+            "email": "eknath.senior@demo.gov.in",
+            "password": "User@123",
+            "role": "user",
+            "profile": {
+                "age": 68,
+                "gender": "male",
+                "state": "Maharashtra",
+                "district": "Shatara",
+                "rural_urban": "rural",
+                "occupation": "Retired",
+                "annual_income": 45000.0,
+                "social_category": "General",
+                "bpl_card": True,
+                "disability": False,
+                "minority": False,
+                "land_holding_acres": 0.5,
+                "marital_status": "widowed"
+            }
         }
-    },
-    {
-        "name": "Ramesh Patil",
-        "email": "ramesh.farmer@demo.gov.in",
-        "password": "User@123",
-        "role": "user",
-        "profile": {
-            "age": 45,
-            "gender": "male",
-            "state": "Maharashtra",
-            "district": "Nashik",
-            "rural_urban": "rural",
-            "occupation": "Farmer",
-            "annual_income": 180000.0,
-            "social_category": "General",
-            "land_holding_acres": 3.5,
-            "bpl_card": False,
-            "disability": False,
-            "minority": False,
-            "marital_status": "married"
-        }
-    },
-    {
-        "name": "Anita Deshmukh",
-        "email": "anita.women@demo.gov.in",
-        "password": "User@123",
-        "role": "user",
-        "profile": {
-            "age": 32,
-            "gender": "female",
-            "state": "Maharashtra",
-            "district": "Nagpur",
-            "rural_urban": "urban",
-            "occupation": "Self-Employed",
-            "annual_income": 95000.0,
-            "social_category": "OBC",
-            "bpl_card": True,
-            "disability": False,
-            "minority": False,
-            "land_holding_acres": 0.0,
-            "marital_status": "married"
-        }
-    },
-    {
-        "name": "Pooja Patil",
-        "email": "pooja.student@demo.gov.in",
-        "password": "User@123",
-        "role": "user",
-        "profile": {
-            "age": 20,
-            "gender": "female",
-            "state": "Maharashtra",
-            "district": "Kolhapur",
-            "rural_urban": "urban",
-            "education_level": "Undergraduate",
-            "course": "B.Sc Computer Science",
-            "occupation": "Student",
-            "annual_income": 300000.0,
-            "social_category": "OBC",
-            "bpl_card": False,
-            "disability": False,
-            "minority": False,
-            "land_holding_acres": 0.0,
-            "marital_status": "single"
-        }
-    },
-    {
-        "name": "Eknath Shinde",
-        "email": "eknath.senior@demo.gov.in",
-        "password": "User@123",
-        "role": "user",
-        "profile": {
-            "age": 68,
-            "gender": "male",
-            "state": "Maharashtra",
-            "district": "Satara",
-            "rural_urban": "rural",
-            "occupation": "Unemployed",
-            "annual_income": 15000.0,
-            "social_category": "General",
-            "bpl_card": True,
-            "disability": False,
-            "minority": False,
-            "land_holding_acres": 0.0,
-            "marital_status": "married"
-        }
-    }
-]
+    ])
+    return users
+
+DEMO_USERS = get_demo_users()
 
 DEMO_SCHEMES = [
     # -------------------------------------------------------------
