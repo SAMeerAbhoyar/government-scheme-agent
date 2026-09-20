@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "gemini"
     LLM_API_KEY: str = "placeholder"
 
+    # Maintenance & Notifications
+    MAX_CONSECUTIVE_FETCH_FAILURES: int = 3
+    SEND_EMAIL_NOTIFICATIONS: bool = False
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

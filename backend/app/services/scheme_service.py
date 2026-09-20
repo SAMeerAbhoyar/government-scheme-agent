@@ -92,11 +92,14 @@ async def process_and_save_scheme(
     stmt_version = (
         select(SchemeVersion)
         .where(SchemeVersion.scheme_id == scheme.id)
-        .where(SchemeVersion.content_hash == content_hash)
+        .order_by(SchemeVersion.fetched_at.desc())
     )
-    existing_version = (await db.execute(stmt_version)).scalar_one_or_none()
+    versions_res = await db.execute(stmt_version)
+    existing_versions = versions_res.scalars().all()
 
-    if not existing_version:
+    already_has_version = any(v.content_hash == content_hash for v in existing_versions)
+
+    if not already_has_version:
         new_version = SchemeVersion(
             scheme_id=scheme.id,
             content_hash=content_hash,
@@ -110,6 +113,24 @@ async def process_and_save_scheme(
         db.add(new_version)
         is_updated = True
 
+        # If previous version existed, compute field-level diff
+        if existing_versions:
+            latest_prev = existing_versions[0]
+            prev_extracted = latest_prev.extracted_json.get("extracted", {})
+            from app.services.diff_service import compute_scheme_diff
+            from app.models.scheme import SchemeChange
+
+            diff_res = compute_scheme_diff(prev_extracted, extracted.model_dump())
+            if diff_res.get("has_changes"):
+                change_obj = SchemeChange(
+                    scheme_id=scheme.id,
+                    from_version=latest_prev.content_hash,
+                    to_version=content_hash,
+                    diff=diff_res,
+                    detected_at=now
+                )
+                db.add(change_obj)
+
     # 5. Create source record provenance entry
     source_rec = SourceRecord(
         scheme_id=scheme.id,
@@ -120,6 +141,9 @@ async def process_and_save_scheme(
         verification_status=status_val
     )
     db.add(source_rec)
+
+    scheme.consecutive_fetch_failures = 0
+    scheme.last_fetched_at = now
 
     await db.commit()
     await db.refresh(scheme)

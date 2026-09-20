@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy import String, Text, DateTime, ForeignKey, Float, JSON, Index, TypeDecorator
+from sqlalchemy import String, Text, DateTime, ForeignKey, Float, JSON, Index, TypeDecorator, Integer
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
@@ -53,12 +53,27 @@ class Scheme(Base):
     status: Mapped[str] = mapped_column(String(50), default="active", nullable=False)
     last_verified: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     extraction_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    consecutive_fetch_failures: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_fetched_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     versions: Mapped[list["SchemeVersion"]] = relationship("SchemeVersion", back_populates="scheme", cascade="all, delete-orphan")
     chunks: Mapped[list["SchemeChunk"]] = relationship("SchemeChunk", back_populates="scheme", cascade="all, delete-orphan")
     source_records: Mapped[list["SourceRecord"]] = relationship("SourceRecord", back_populates="scheme", cascade="all, delete-orphan")
     saved_by: Mapped[list["SavedScheme"]] = relationship("SavedScheme", back_populates="scheme", cascade="all, delete-orphan")
+    changes: Mapped[list["SchemeChange"]] = relationship("SchemeChange", back_populates="scheme", cascade="all, delete-orphan")
     recommendations: Mapped[list["Recommendation"]] = relationship("Recommendation", back_populates="scheme", cascade="all, delete-orphan")
+
+class SchemeChange(Base):
+    __tablename__ = "scheme_changes"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    scheme_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("schemes.id", ondelete="CASCADE"), nullable=False)
+    from_version: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    to_version: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    diff: Mapped[dict] = mapped_column(JSON, nullable=False)
+    detected_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    scheme: Mapped["Scheme"] = relationship("Scheme", back_populates="changes")
 
 class SchemeVersion(Base):
     __tablename__ = "scheme_versions"
