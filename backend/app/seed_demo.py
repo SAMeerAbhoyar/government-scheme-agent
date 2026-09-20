@@ -1,4 +1,5 @@
 import asyncio
+import os
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
@@ -13,8 +14,7 @@ from app.models.scheme import Scheme, SchemeChunk, SchemeVersion
 from app.rag.embeddings import MockEmbedder
 from app.services.matching import match_scheme_against_profile
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-import os
+logger = logging.getLogger(__name__)
 
 SEED_ADMIN_EMAIL = os.getenv("SEED_ADMIN_EMAIL")
 SEED_ADMIN_PASSWORD = os.getenv("SEED_ADMIN_PASSWORD")
@@ -955,4 +955,5 @@ async def seed_demo():
         print("=" * 65 + "\n")
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     asyncio.run(seed_demo())
