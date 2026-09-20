@@ -37,3 +37,9 @@ Thumbs.db
 *.sqlite3
 scheme_agent.db
 pgdata/
+
+data/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
