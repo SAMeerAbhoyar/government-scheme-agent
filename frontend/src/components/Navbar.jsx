@@ -88,7 +88,15 @@ const Navbar = () => {
                     {unreadCount}
                   </span>
                 )}
-              </Link>
+              {user?.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className={`flex items-center gap-1.5 text-xs sm:text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${isActive('/admin') ? 'bg-amber-50 text-amber-700 font-bold' : 'text-amber-600 hover:bg-amber-50'}`}
+                >
+                  <Shield className="w-4 h-4 text-amber-600" />
+                  <span>Admin</span>
+                </Link>
+              )}
             </nav>
 
             <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>

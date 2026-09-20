@@ -12,6 +12,7 @@ import History from './pages/History';
 import Compare from './pages/Compare';
 import SchemeDetail from './pages/SchemeDetail';
 import Notifications from './pages/Notifications';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -58,6 +59,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Notifications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
                   </ProtectedRoute>
                 }
               />

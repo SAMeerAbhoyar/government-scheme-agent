@@ -115,3 +115,16 @@ class SourceRecord(Base):
     verification_status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
 
     scheme: Mapped[Optional["Scheme"]] = relationship("Scheme", back_populates="source_records")
+
+class IngestionRun(Base):
+    __tablename__ = "ingestion_runs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    source: Mapped[str] = mapped_column(String(255), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    fetched: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    extracted: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    flagged: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    rejected: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    errors: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)

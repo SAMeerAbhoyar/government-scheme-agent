@@ -4,6 +4,7 @@ import yaml
 import asyncio
 import argparse
 import logging
+from datetime import datetime, timezone
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
@@ -146,6 +147,25 @@ async def run_ingestion(source_id: str = None, limit: int = None, reindex: bool 
             except Exception as e:
                 logger.error(f"Extraction or DB save failed for {url}: {str(e)}")
                 stats["rejected"] += 1
+
+    # Log IngestionRun record
+    try:
+        from app.models.scheme import IngestionRun
+        async with session_maker() as db_run:
+            irun = IngestionRun(
+                source=source_id or "all_sources",
+                started_at=datetime.now(timezone.utc),
+                finished_at=datetime.now(timezone.utc),
+                fetched=stats["fetched"],
+                extracted=stats["extracted"],
+                flagged=stats["flagged"],
+                rejected=stats["rejected"],
+                errors={"details": f"Processed {len(sources_to_process)} sources"}
+            )
+            db_run.add(irun)
+            await db_run.commit()
+    except Exception as e_run:
+        logger.warning(f"Could not log IngestionRun: {e_run}")
 
     print("\n" + "=" * 55)
     print("      OFFLINE INGESTION PIPELINE SUMMARY")
