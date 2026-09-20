@@ -1,6 +1,6 @@
 import os
 from typing import List, Union
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "super-secret-jwt-key-change-this-in-production-min-32-chars"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
+
+    # Profile Encryption Key
+    ENCRYPTION_KEY: str = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H"
+    PROFILE_ENCRYPTION_KEY: str = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H"
 
     # CORS
     CORS_ORIGINS: List[str] = [
@@ -45,9 +49,19 @@ class Settings(BaseSettings):
     # Maintenance & Notifications
     MAX_CONSECUTIVE_FETCH_FAILURES: int = 3
     SEND_EMAIL_NOTIFICATIONS: bool = False
-    PROFILE_ENCRYPTION_KEY: str = "a3xR9Z5u1v8w2y4z7A6B8C0D2E4F6G8H"
     ENABLE_INGESTION_SCHEDULER: bool = False
     RATE_LIMIT_PER_MINUTE: int = 60
+
+    @model_validator(mode="after")
+    def validate_encryption_key_for_environment(self):
+        if self.ENVIRONMENT.lower() not in ("development", "testing"):
+            invalid_placeholders = {"", "placeholder", "your-encryption-key-placeholder", "change-me", "none"}
+            key = (self.ENCRYPTION_KEY or "").strip().lower()
+            if not key or key in invalid_placeholders:
+                raise ValueError(
+                    f"ENCRYPTION_KEY is required and cannot be empty or placeholder when running in '{self.ENVIRONMENT}' environment."
+                )
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",

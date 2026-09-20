@@ -1,13 +1,17 @@
 import pytest
 import uuid
 from unittest.mock import patch
+from cryptography.fernet import Fernet, InvalidToken
 from app.models.user import User, Profile
+from app.models.scheme import Scheme
 from app.models.activity import LLMCall
+from app.core.config import Settings
 from app.core.security import create_access_token, get_password_hash
-from app.core.crypto import encrypt_value, decrypt_value
+from app.core.crypto import encrypt_value, decrypt_value, get_fernet_key
+from app.services.notification_service import profile_to_dict
+from app.services.matching import match_scheme_against_profile, MatchResult
 from app.agents.query_planner import QueryPlannerAgent
 from app.agents.explainer import RecommendationExplainerAgent
-from app.services.matching import MatchResult
 
 @pytest.fixture
 async def auth_user(db_session, client):
@@ -34,12 +38,86 @@ async def test_security_headers(client):
     assert "X-Request-ID" in res.headers
 
 @pytest.mark.asyncio
-async def test_crypto_encryption_and_decryption():
+async def test_crypto_round_trip_encryption():
     raw_val = "OBC"
-    encrypted = encrypt_value(raw_val)
+    key_correct = "my-secret-key-1234567890123456"
+    encrypted = encrypt_value(raw_val, key=key_correct)
     assert encrypted != raw_val
-    decrypted = decrypt_value(encrypted)
+    assert str(encrypted).startswith("gAAAAA")
+
+    decrypted = decrypt_value(encrypted, key=key_correct)
     assert decrypted == raw_val
+
+@pytest.mark.asyncio
+async def test_crypto_wrong_key_fails():
+    raw_val = "120000.0"
+    key_correct = "correct-key-12345678901234567890"
+    key_wrong = "wrong-key-9999999999999999999999"
+
+    encrypted = encrypt_value(raw_val, key=key_correct)
+    f_wrong = Fernet(get_fernet_key(key_wrong))
+
+    # Decrypting with wrong key raises InvalidToken
+    with pytest.raises(InvalidToken):
+        f_wrong.decrypt(encrypted.encode('utf-8'))
+
+@pytest.mark.asyncio
+async def test_app_refuses_to_start_outside_dev_with_missing_key():
+    # Outside development (e.g. production), missing or placeholder ENCRYPTION_KEY must raise ValueError
+    with pytest.raises(ValueError, match="ENCRYPTION_KEY is required"):
+        Settings(ENVIRONMENT="production", ENCRYPTION_KEY="placeholder")
+
+    with pytest.raises(ValueError, match="ENCRYPTION_KEY is required"):
+        Settings(ENVIRONMENT="production", ENCRYPTION_KEY="")
+
+@pytest.mark.asyncio
+async def test_encrypted_profile_matching_passes(db_session, auth_user):
+    client, headers, user = auth_user
+
+    # Create profile with sensitive encrypted columns
+    profile = Profile(
+        user_id=user.id,
+        state="Maharashtra",
+        age=22,
+        gender="female",
+        annual_income=100000.0,
+        social_category="OBC",
+        disability=False,
+        bpl_card=True
+    )
+    db_session.add(profile)
+    await db_session.commit()
+    await db_session.refresh(profile)
+
+    # Verify decrypted values on ORM object
+    assert profile.social_category == "OBC"
+    assert profile.annual_income == 100000.0
+    assert profile.bpl_card is True
+
+    # Test scheme matching
+    scheme = Scheme(
+        name="Encrypted Profile Test Scheme",
+        state="Maharashtra",
+        status="active",
+        eligibility_rules={
+            "rules": [
+                {"field": "state", "op": "eq", "value": "Maharashtra"},
+                {"field": "social_category", "op": "eq", "value": "OBC"},
+                {"field": "annual_income", "op": "lte", "value": 200000},
+                {"field": "bpl_card", "op": "eq", "value": True}
+            ]
+        }
+    )
+    db_session.add(scheme)
+    await db_session.commit()
+
+    p_dict = profile_to_dict(profile)
+    assert p_dict["social_category"] == "OBC"
+    assert p_dict["annual_income"] == 100000.0
+    assert p_dict["bpl_card"] is True
+
+    match_res = match_scheme_against_profile(p_dict, scheme)
+    assert match_res.status == "potentially_relevant"
 
 @pytest.mark.asyncio
 async def test_account_export_and_deletion(db_session, auth_user):

@@ -4,6 +4,7 @@ from typing import Optional
 from sqlalchemy import String, DateTime, ForeignKey, Integer, Numeric, Boolean, JSON, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.db import Base
+from app.core.crypto import EncryptedString
 
 class User(Base):
     __tablename__ = "users"
@@ -40,12 +41,12 @@ class Profile(Base):
     year: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     occupation: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     employment_status: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    annual_income: Mapped[Optional[float]] = mapped_column(Numeric(14, 2), nullable=True)
+    annual_income: Mapped[Optional[float]] = mapped_column(EncryptedString(float), nullable=True)
     family_size: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    social_category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True) # SC, ST, OBC, EWS, General, prefer_not_to_say
-    disability: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
-    minority: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
-    bpl_card: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    social_category: Mapped[Optional[str]] = mapped_column(EncryptedString(str), nullable=True) # SC, ST, OBC, EWS, General, prefer_not_to_say
+    disability: Mapped[Optional[bool]] = mapped_column(EncryptedString(bool), nullable=True)
+    minority: Mapped[Optional[bool]] = mapped_column(EncryptedString(bool), nullable=True)
+    bpl_card: Mapped[Optional[bool]] = mapped_column(EncryptedString(bool), nullable=True)
     domicile_state: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     marital_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     land_holding_acres: Mapped[Optional[float]] = mapped_column(Numeric(10, 2), nullable=True)

@@ -21,8 +21,10 @@ def profile_to_dict(profile: Optional[Profile]) -> Dict[str, Any]:
         if col.name not in ("id", "user_id"):
             val = getattr(profile, col.name)
             if val is not None:
-                if hasattr(val, '__float__'):
-                    data[col.name] = float(val)
+                if isinstance(val, bool):
+                    data[col.name] = val
+                elif isinstance(val, (int, float)):
+                    data[col.name] = float(val) if isinstance(val, float) else val
                 else:
                     data[col.name] = val
     if profile.other_attributes and isinstance(profile.other_attributes, dict):
